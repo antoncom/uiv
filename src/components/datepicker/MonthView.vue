@@ -83,7 +83,10 @@
       changeView (monthIndex) {
         if (isExist(monthIndex)) {
           this.$emit('month-change', monthIndex)
-          this.$emit('view-change', 'd')
+          if(!this.$parent.monthsOnly) { /// ant //
+            this.$emit('view-change', 'd')
+          }
+          // this.$emit('view-change', 'd') // commented by ant
         } else {
           this.$emit('view-change', 'y')
         }

@@ -1,40 +1,42 @@
 <template>
   <div :style="pickerStyle" data-role="date-picker" @click="onPickerClick">
     <date-view
-      v-show="view==='d'"
-      :month="currentMonth"
-      :year="currentYear"
-      :date="valueDateObj"
-      :today="now"
-      :limit="limit"
-      :week-starts-with="weekStartsWith"
-      :icon-control-left="iconControlLeft"
-      :icon-control-right="iconControlRight"
-      :date-class="dateClass"
-      @month-change="onMonthChange"
-      @year-change="onYearChange"
-      @date-change="onDateChange"
-      @view-change="onViewChange"/>
+            v-show="view==='d'&&monthsOnly===false"
+            :month="currentMonth"
+            :year="currentYear"
+            :date="valueDateObj"
+            :today="now"
+            :limit="limit"
+            :week-starts-with="weekStartsWith"
+            :icon-control-left="iconControlLeft"
+            :icon-control-right="iconControlRight"
+            :date-class="dateClass"
+            :months-only="monthsOnly"
+            :auto-date="autoDate"
+            @month-change="onMonthChange"
+            @year-change="onYearChange"
+            @date-change="onDateChange"
+            @view-change="onViewChange"/>
     <month-view
-      v-show="view==='m'"
-      :month="currentMonth"
-      :year="currentYear"
-      :icon-control-left="iconControlLeft"
-      :icon-control-right="iconControlRight"
-      @month-change="onMonthChange"
-      @year-change="onYearChange"
-      @view-change="onViewChange"/>
+            v-show="view==='m'"
+            :month="currentMonth"
+            :year="currentYear"
+            :icon-control-left="iconControlLeft"
+            :icon-control-right="iconControlRight"
+            @month-change="onMonthChange"
+            @year-change="onYearChange"
+            @view-change="onViewChange"/>
     <year-view
-      v-show="view==='y'"
-      :year="currentYear"
-      :icon-control-left="iconControlLeft"
-      :icon-control-right="iconControlRight"
-      @year-change="onYearChange"
-      @view-change="onViewChange"/>
+            v-show="view==='y'"
+            :year="currentYear"
+            :icon-control-left="iconControlLeft"
+            :icon-control-right="iconControlRight"
+            @year-change="onYearChange"
+            @view-change="onViewChange"/>
     <div v-if="todayBtn||clearBtn">
       <br/>
       <div class="text-center">
-        <btn data-action="select" type="info" size="sm" v-if="todayBtn" @click="selectToday">{{t('uiv.datePicker.today')}}</btn>
+        <btn data-action="select" type="info" size="sm" v-if="todayBtn&&monthsOnly===false" @click="selectToday">{{t('uiv.datePicker.today')}}</btn>
         <btn data-action="select" size="sm" v-if="clearBtn" @click="clearSelect">{{t('uiv.datePicker.clear')}}</btn>
       </div>
     </div>
@@ -70,6 +72,14 @@
       closeOnSelected: {
         type: Boolean,
         default: true
+      },
+      monthsOnly: {
+        type: Boolean,
+        default: false
+      },
+      autoDate: {
+        type: Number,
+        default: '1'
       },
       limitFrom: null,
       limitTo: null,
@@ -151,6 +161,9 @@
       }
     },
     mounted () {
+      // ant below //
+      this.initialView = (this.monthsOnly) ? 'm' : this.initialView
+      //
       if (this.value) {
         this.setMonthAndYearByValue(this.value)
       } else {
@@ -182,6 +195,18 @@
       },
       onMonthChange (month) {
         this.currentMonth = month
+        /// ant below ///
+        if(this.monthsOnly)  {
+          // make autoDate valid
+          let lastDayOfMonth = new Date(this.currentYear, month + 1, 0).getDate()
+          this.autoDate = (this.autoDate <= 0) ? 1: this.autoDate
+          this.autoDate = (this.autoDate > lastDayOfMonth) ? lastDayOfMonth : this.autoDate
+
+          // set date and hide datepicker
+          let _date = new Date(this.currentYear, month, this.autoDate)
+          this.$emit('input', stringify(_date, this.format))
+          this.$parent.show = false
+        }
       },
       onYearChange (year) {
         this.currentYear = year
@@ -207,8 +232,17 @@
         })
       },
       clearSelect () {
-        this.view = 'd'
-        this.onDateChange()
+        /// ant ///
+        if(this.monthsOnly)  {
+          this.currentMonth = this.now.getMonth()
+          this.currentYear = this.now.getFullYear()
+          this.view = 'm'
+          this.$emit('input', '')
+        }
+        else {
+          this.view = 'd'
+          this.onDateChange()
+        }
       },
       onPickerClick (event) {
         if (event.target.getAttribute('data-action') !== 'select' || !this.closeOnSelected) {
